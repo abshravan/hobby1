@@ -1,6 +1,7 @@
 "use client";
 
 import { DIFFICULTY_LABEL, type ChecklistItem } from "@/lib/checklist";
+import { formatCompletionRate, isRare, type ItemStat } from "@/lib/stats";
 
 const DIFFICULTY_STYLE: Partial<Record<ChecklistItem["difficulty"], string>> = {
   quick: "bg-emerald-50 text-emerald-800",
@@ -10,13 +11,18 @@ const DIFFICULTY_STYLE: Partial<Record<ChecklistItem["difficulty"], string>> = {
 export function ChecklistItemRow({
   item,
   checked,
+  stat,
   onToggle,
 }: {
   item: ChecklistItem;
   checked: boolean;
+  stat?: ItemStat;
   onToggle: (checked: boolean) => void;
 }) {
   const label = DIFFICULTY_LABEL[item.difficulty];
+  // Null until there are enough engaged users for the number to mean anything.
+  const rate = formatCompletionRate(stat);
+  const rare = isRare(stat);
 
   return (
     <li>
@@ -49,12 +55,23 @@ export function ChecklistItemRow({
           </svg>
         </span>
 
-        <span
-          className={`min-w-0 flex-1 text-[15px] leading-snug transition-colors ${
-            checked ? "text-ink-600 line-through decoration-ink-400" : "text-ink-950"
-          }`}
-        >
-          {item.title}
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block text-[15px] leading-snug transition-colors ${
+              checked ? "text-ink-600 line-through decoration-ink-400" : "text-ink-950"
+            }`}
+          >
+            {item.title}
+          </span>
+          {rate && (
+            <span
+              className={`mt-0.5 block text-xs ${
+                rare ? "font-medium text-ember-600" : "text-ink-400"
+              }`}
+            >
+              {rate}
+            </span>
+          )}
         </span>
 
         {label && (

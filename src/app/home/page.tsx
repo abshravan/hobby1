@@ -16,7 +16,7 @@ export default async function HomePage() {
   // the page is never renderable without a verified user.
   if (!user) redirect("/login?next=/home");
 
-  const { categories, completedItemIds, error } = await loadChecklist(supabase);
+  const { categories, completedItemIds, stats, error } = await loadChecklist(supabase);
 
   const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0);
 
@@ -53,7 +53,11 @@ export default async function HomePage() {
           </Link>
         </section>
       ) : (
-        <Checklist categories={categories} completedItemIds={completedItemIds} />
+        <Checklist
+          categories={categories}
+          completedItemIds={completedItemIds}
+          stats={stats}
+        />
       )}
     </main>
   );

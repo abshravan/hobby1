@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ChecklistCategory, ChecklistItem } from "@/lib/checklist";
+import type { ItemStat } from "@/lib/stats";
 
 type CategoryRow = {
   id: string;
@@ -9,9 +10,18 @@ type CategoryRow = {
   items: (ChecklistItem & { sort_order: number })[];
 };
 
+type StatRow = {
+  item_id: string;
+  completed_users: number | string;
+  total_users: number | string;
+  completion_rate: number | string;
+};
+
 export type ChecklistData = {
   categories: ChecklistCategory[];
   completedItemIds: string[];
+  /** Keyed by item id. Empty when the stats view has not been built yet. */
+  stats: Record<string, ItemStat>;
   error: string | null;
 };
 
@@ -20,18 +30,29 @@ export type ChecklistData = {
  *
  * The progress query carries no user_id filter on purpose: RLS scopes it to the
  * signed-in user, so there is no filter here to forget or get wrong.
+ *
+ * Aggregate stats are fetched alongside and are intentionally not user-scoped —
+ * they identify nobody. A failure to read them is not fatal: the checklist
+ * renders without percentages rather than not at all.
  */
 export async function loadChecklist(supabase: SupabaseClient): Promise<ChecklistData> {
-  const [{ data: categoryRows, error: categoryError }, { data: progressRows, error: progressError }] =
-    await Promise.all([
-      supabase
-        .from("categories")
-        .select("id, slug, name, tagline, items(id, slug, title, difficulty, sort_order)")
-        .eq("items.is_active", true)
-        .order("sort_order")
-        .returns<CategoryRow[]>(),
-      supabase.from("user_item_progress").select("item_id").eq("status", "completed"),
-    ]);
+  const [
+    { data: categoryRows, error: categoryError },
+    { data: progressRows, error: progressError },
+    { data: statRows },
+  ] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, slug, name, tagline, items(id, slug, title, difficulty, sort_order)")
+      .eq("items.is_active", true)
+      .order("sort_order")
+      .returns<CategoryRow[]>(),
+    supabase.from("user_item_progress").select("item_id").eq("status", "completed"),
+    supabase
+      .from("item_stats")
+      .select("item_id, completed_users, total_users, completion_rate")
+      .returns<StatRow[]>(),
+  ]);
 
   const categories: ChecklistCategory[] = (categoryRows ?? []).map((row) => ({
     id: row.id,
@@ -45,9 +66,21 @@ export async function loadChecklist(supabase: SupabaseClient): Promise<Checklist
       .map(({ id, slug, title, difficulty }) => ({ id, slug, title, difficulty })),
   }));
 
+  const stats: Record<string, ItemStat> = {};
+  for (const row of statRows ?? []) {
+    stats[row.item_id] = {
+      itemId: row.item_id,
+      completedUsers: Number(row.completed_users),
+      totalUsers: Number(row.total_users),
+      // Postgres numeric arrives as a string over the wire.
+      completionRate: Number(row.completion_rate),
+    };
+  }
+
   return {
     categories,
     completedItemIds: (progressRows ?? []).map((row) => row.item_id as string),
+    stats,
     error: categoryError?.message ?? progressError?.message ?? null,
   };
 }

@@ -4,14 +4,17 @@ import { useId, useState } from "react";
 import { ChecklistItemRow } from "@/components/checklist-item-row";
 import { ProgressMeter } from "@/components/progress-meter";
 import { categoryProgress, type ChecklistCategory } from "@/lib/checklist";
+import type { ItemStat } from "@/lib/stats";
 
 export function CategorySection({
   category,
   completedIds,
+  stats,
   onToggle,
 }: {
   category: ChecklistCategory;
   completedIds: ReadonlySet<string>;
+  stats: Record<string, ItemStat>;
   onToggle: (itemId: string, checked: boolean) => void;
 }) {
   const [open, setOpen] = useState(true);
@@ -74,6 +77,7 @@ export function CategorySection({
               key={item.id}
               item={item}
               checked={completedIds.has(item.id)}
+              stat={stats[item.id]}
               onToggle={(checked) => onToggle(item.id, checked)}
             />
           ))}

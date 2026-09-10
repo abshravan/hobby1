@@ -5,15 +5,18 @@ import { CategorySection } from "@/components/category-section";
 import { ProgressMeter } from "@/components/progress-meter";
 import { setItemCompleted } from "@/app/home/actions";
 import { overallProgress, type ChecklistCategory } from "@/lib/checklist";
+import type { ItemStat } from "@/lib/stats";
 
 type Toggle = { itemId: string; completed: boolean };
 
 export function Checklist({
   categories,
   completedItemIds,
+  stats,
 }: {
   categories: ChecklistCategory[];
   completedItemIds: string[];
+  stats: Record<string, ItemStat>;
 }) {
   const serverCompleted = useMemo(() => new Set(completedItemIds), [completedItemIds]);
   const [, startTransition] = useTransition();
@@ -64,6 +67,7 @@ export function Checklist({
             key={category.id}
             category={category}
             completedIds={completedIds}
+            stats={stats}
             onToggle={handleToggle}
           />
         ))}

@@ -16,8 +16,9 @@ Item list and copy source: [`docs/life_checklist_and_message_engine.md`](docs/li
 | 2 | Auth | done |
 | 3 | Core data + seeding | done |
 | 4 | Checklist core loop | done |
-| 5 | Aggregate completion stats | next |
-| 6–15 | see the build plan | not started |
+| 5 | Aggregate completion stats | done |
+| 6 | Tone setting + message engine | next |
+| 7–15 | see the build plan | not started |
 
 ## Stack
 
@@ -53,6 +54,11 @@ supabase db push          # or paste supabase/migrations/*.sql into the SQL edit
 npm run db:seed           # loads 8 categories, 128 items, 79 copy lines
 ```
 
+Migration `0003` schedules an hourly rebuild of the completion-rate view with
+pg_cron. If pg_cron is not available on your project the migration says so and
+does nothing else — point a scheduler at `POST /api/admin/refresh-stats`
+instead, with `CRON_SECRET` set (Vercel Cron sends it automatically).
+
 `npm run db:seed` is idempotent — rows are matched on their natural keys, so
 re-running updates in place. `npm run db:seed:prune` additionally deactivates
 items that no longer appear in `src/content/`. Items are deactivated, never
@@ -63,6 +69,18 @@ deleted, so user progress is never orphaned.
 Email/password works out of the box. For Google sign-in, enable the Google
 provider in **Supabase → Authentication → Providers** and add
 `<site-url>/auth/callback` to the allowed redirect URLs.
+
+## Completion stats
+
+"X% of users have done this" is computed by the `item_stats` materialized view.
+Two decisions worth knowing:
+
+- **The denominator is engaged users**, not registrations — people who have
+  completed at least one item. Counting dormant signups would drag every rate
+  toward zero as they accumulate.
+- **Nothing is shown below `MIN_USERS_FOR_STATS`** (25, in `src/lib/stats.ts`).
+  Under that, the first user to check an item would be told 100% of users have
+  done it, which is true and useless.
 
 ## How the tone rules are enforced
 
