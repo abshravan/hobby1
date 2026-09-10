@@ -12,7 +12,8 @@
     "db:seed:prune": "tsx scripts/seed.ts --prune",
     "test": "node --import tsx --test 'src/**/*.test.ts'",
     "dev:seed": "tsx scripts/seed-dev.ts",
-    "dev:seed:clean": "tsx scripts/seed-dev.ts --clean"
+    "dev:seed:clean": "tsx scripts/seed-dev.ts --clean",
+    "messages:demo": "tsx scripts/messages-demo.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -27,14 +27,12 @@ export default async function HomePage() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-ember-600">Artha</p>
           <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">Your list</h1>
         </div>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="rounded-lg border border-parchment-200 bg-white px-3 py-1.5 text-sm transition hover:bg-parchment-200"
-          >
-            Sign out
-          </button>
-        </form>
+        <Link
+          href="/settings"
+          className="rounded-lg border border-parchment-200 bg-white px-3 py-1.5 text-sm transition hover:bg-parchment-200"
+        >
+          Settings
+        </Link>
       </header>
 
       {error || totalItems === 0 ? (

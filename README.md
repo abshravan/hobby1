@@ -17,8 +17,9 @@ Item list and copy source: [`docs/life_checklist_and_message_engine.md`](docs/li
 | 3 | Core data + seeding | done |
 | 4 | Checklist core loop | done |
 | 5 | Aggregate completion stats | done |
-| 6 | Tone setting + message engine | next |
-| 7–15 | see the build plan | not started |
+| 6 | Tone setting + message engine | done |
+| 7 | Wire up triggers | next |
+| 8–15 | see the build plan | not started |
 
 ## Stack
 
@@ -122,6 +123,43 @@ Two decisions worth knowing:
 - **Nothing is shown below `MIN_USERS_FOR_STATS`** (25, in `src/lib/stats.ts`).
   Under that, the first user to check an item would be told 100% of users have
   done it, which is true and useless.
+
+## The message engine
+
+`selectMessage()` in `src/lib/messages/engine.ts` takes a trigger, the user's
+tone preference and some context, and returns one filled message. Nothing calls
+it automatically yet — Step 7 wires the triggers. To see it work:
+
+```bash
+npm run messages:demo
+```
+
+That runs a matrix of trigger x tone x context against the real copy library and
+prints what a user would be shown. Read the `via` field: it names the rule that
+decided the tone, so any de-escalation is auditable rather than mysterious.
+
+Tone resolution (`src/lib/messages/tone.ts`) applies the product's rules in
+order, and every branch is a *de-escalation* — nothing can turn a motivate
+preference into a roast, so a wrong signal can only ever produce a message
+kinder than it needed to be:
+
+| Condition | Tone | Why |
+|---|---|---|
+| Distress language in free text | support | Hard override, checked first. No joke, no gamification |
+| `distress_support` / `plateau` | support | Never a joke |
+| `needs_help_flag`, or the item is flagged | motivate | Rule 2 |
+| `inactivity`, `streak_break` | motivate | Rule 3 |
+| Away 14+ days, or a streak just broke | motivate | Rule 3 as *context* — softens any trigger |
+| otherwise | the user's setting | |
+
+Two details worth knowing:
+
+- **A long absence softens every trigger, not just the absence ones.** Coming
+  back after three weeks to a joke about being absent is the failure that rule
+  prevents.
+- **Variants whose placeholders cannot be filled are skipped.** A `{days}` line
+  is never chosen when no day count was supplied — shipping a literal `{item}`
+  to a user is worse than showing different copy.
 
 ## How the tone rules are enforced
 
