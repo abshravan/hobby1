@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:prune": "tsx scripts/seed.ts --prune",
-    "test": "node --import tsx --test 'src/**/*.test.ts'"
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
+    "dev:seed": "tsx scripts/seed-dev.ts",
+    "dev:seed:clean": "tsx scripts/seed-dev.ts --clean"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

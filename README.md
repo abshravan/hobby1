@@ -25,6 +25,47 @@ Item list and copy source: [`docs/life_checklist_and_message_engine.md`](docs/li
 Next.js 15 (App Router) · React 19 · Tailwind CSS v4 · Supabase (Postgres + Auth) ·
 deployed on Vercel.
 
+## Signing in while developing
+
+`/dev/login` signs you in as a seeded persona with one click — a real Supabase
+session, so RLS and every auth check behave exactly as they do in production.
+
+```bash
+# in .env.local
+ENABLE_DEV_LOGIN=true
+
+npm run dev:seed                # personas + 40 synthetic users so stats appear
+npm run dev:seed -- --users=0   # personas only
+npm run dev:seed:clean          # delete every dev account and its progress
+```
+
+| Persona | For testing |
+|---|---|
+| Nia | Nothing checked — empty states, first-check, 0% |
+| Rey | A scattered third of the list — the ordinary case |
+| Ras | Roast tone, mid progress — the message engine |
+| Cam | Adventurer at 100%, most categories past 75% — milestones and badges |
+
+The synthetic users exist because completion stats stay hidden below
+`MIN_USERS_FOR_STATS`; without them you cannot see the "X% of users have done
+this" hook while developing. Every seeded account uses a `dev-` prefix on the
+reserved `.test` TLD, so `--clean` finds them all and no address can reach a
+real inbox.
+
+**This must never be enabled in a deployed environment** — it lets anyone sign
+in as any seeded account. Four guards:
+
+1. `devLoginEnabled()` requires `NODE_ENV !== "production"` *and*
+   `ENABLE_DEV_LOGIN === "true"` (exactly that string).
+2. The page 404s when disabled.
+3. The middleware 404s anything under `/dev`, including POSTs to the Server
+   Action.
+4. `next.config.ts` **fails the production build** if the flag is set — the one
+   guard a misconfigured deploy cannot route around at runtime.
+
+The seed script refuses to run unless the flag is set, so it cannot be pointed
+at a production project by accident.
+
 ## Tests
 
 ```bash
