@@ -15,13 +15,22 @@ Item list and copy source: [`docs/life_checklist_and_message_engine.md`](docs/li
 | 1 | Project setup | done |
 | 2 | Auth | done |
 | 3 | Core data + seeding | done |
-| 4 | Checklist core loop | next |
-| 5–15 | see the build plan | not started |
+| 4 | Checklist core loop | done |
+| 5 | Aggregate completion stats | next |
+| 6–15 | see the build plan | not started |
 
 ## Stack
 
 Next.js 15 (App Router) · React 19 · Tailwind CSS v4 · Supabase (Postgres + Auth) ·
 deployed on Vercel.
+
+## Tests
+
+```bash
+npm test           # progress math
+npm run lint
+npm run typecheck
+```
 
 ## Local setup
 
@@ -73,9 +82,10 @@ everyone but its owner — in comparisons, feeds and leaderboards alike. Aggrega
 ## Layout
 
 ```
-src/app/            routes (landing, auth, home, status, health API)
+src/app/            routes (landing, auth, the checklist, status, health API)
 src/components/     shared UI
 src/content/        seed content — items and the copy library, edit these
+src/lib/            progress math, shared queries, types
 src/lib/supabase/   browser / server / admin clients + session middleware
 supabase/migrations schema and RLS policies
 scripts/seed.ts     idempotent seeder

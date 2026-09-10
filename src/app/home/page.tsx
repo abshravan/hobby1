@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Checklist } from "@/components/checklist";
 import { createClient } from "@/lib/supabase/server";
+import { loadChecklist } from "@/lib/checklist-queries";
 
-export const metadata = { title: "Home" };
+export const metadata = { title: "Your list" };
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -10,25 +12,20 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // The middleware already gated this route; this is the defence-in-depth check
-  // so the page is never renderable without a verified user.
+  // Middleware already gated this route; this is the defence-in-depth check so
+  // the page is never renderable without a verified user.
   if (!user) redirect("/login?next=/home");
 
-  const { count: categoryCount } = await supabase
-    .from("categories")
-    .select("id", { count: "exact", head: true });
-  const { count: itemCount } = await supabase
-    .from("items")
-    .select("id", { count: "exact", head: true });
+  const { categories, completedItemIds, error } = await loadChecklist(supabase);
+
+  const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <header className="flex items-baseline justify-between gap-4">
+    <main className="mx-auto max-w-2xl px-6 pb-20">
+      <header className="flex items-baseline justify-between gap-4 pb-5 pt-10">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-ember-600">Artha</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            Hello, {user.email}
-          </h1>
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">Your list</h1>
         </div>
         <form action="/auth/signout" method="post">
           <button
@@ -40,20 +37,24 @@ export default async function HomePage() {
         </form>
       </header>
 
-      <section className="mt-10 rounded-xl border border-parchment-200 bg-white p-5">
-        <h2 className="font-medium">Your list is ready to be built</h2>
-        <p className="mt-1 text-sm text-ink-600">
-          {itemCount
-            ? `${itemCount} items across ${categoryCount} categories are seeded and waiting. The checklist UI lands in Step 4.`
-            : "No items seeded yet — run `npm run db:seed` after applying the migration."}
-        </p>
-        <Link
-          href="/status"
-          className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
-        >
-          Check stack status
-        </Link>
-      </section>
+      {error || totalItems === 0 ? (
+        <section className="rounded-xl border border-parchment-200 bg-white p-5">
+          <h2 className="font-medium">Nothing to check off yet</h2>
+          <p className="mt-1 text-sm text-ink-600">
+            {error
+              ? `The list could not be loaded: ${error}`
+              : "No items are seeded. Apply the migrations in supabase/migrations, then run npm run db:seed."}
+          </p>
+          <Link
+            href="/status"
+            className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
+          >
+            Check stack status
+          </Link>
+        </section>
+      ) : (
+        <Checklist categories={categories} completedItemIds={completedItemIds} />
+      )}
     </main>
   );
 }
